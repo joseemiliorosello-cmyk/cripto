@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Cripto ST"/>
+<meta name="theme-color" content="#0a130a"/>
+<title>Tablero Cripto · Satoshi Tango</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a130a;
+    --bg2: #101d10;
+    --bg3: #162316;
+    --border: #1f3a1f;
+    --border2: #2a4a2a;
+    --text: #e2ede2;
+    --muted: #7a8f7a;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --accent: #4ade80;
+    --mono: 'Space Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--display); overflow-x: hidden; }
+  body { padding-bottom: env(safe-area-inset-bottom, 20px); }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: center; padding: 18px 16px 10px; position: sticky; top: 0; background: var(--bg); z-index: 10; border-bottom: 1px solid var(--border); }
+  .header h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .header p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .header-btns { display: flex; gap: 8px; }
+  .icon-btn { background: var(--bg3); border: 1px solid var(--border2); border-radius: 10px; color: var(--text); width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; transition: background .15s; }
+  .icon-btn:active { background: var(--border2); }
+  .spin { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Disclaimer */
+  .disclaimer { margin: 10px 16px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; font-size: 12px; color: #a0b4a0; line-height: 1.5; }
+
+  /* FNG Bar */
+  .fng-wrap { margin: 10px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .fng-top { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; margin-bottom: 8px; }
+  .fng-label { color: var(--muted); }
+  .fng-val { font-family: var(--mono); font-weight: 700; font-size: 13px; }
+  .fng-track { height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .fng-fill { height: 100%; border-radius: 4px; transition: width .5s ease; }
+  .fng-hint { font-size: 11px; color: var(--muted); margin-top: 7px; line-height: 1.4; }
+
+  /* Coins list */
+  .list { padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Coin card */
+  .card { display: flex; align-items: center; gap: 11px; background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; cursor: pointer; width: 100%; text-align: left; color: inherit; font-family: inherit; transition: background .12s, border-color .12s; position: relative; overflow: hidden; }
+  .card:active { background: var(--bg3); }
+  .card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 14px 0 0 14px; }
+  .card.green::before { background: var(--green); }
+  .card.yellow::before { background: var(--yellow); }
+  .card.red::before { background: var(--red); }
+  .card-sym { font-weight: 800; font-size: 15px; letter-spacing: -0.3px; }
+  .card-name { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .card-mid { flex: 1; }
+  .card-status { font-size: 11.5px; font-weight: 700; }
+  .card-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-right { text-align: right; }
+  .card-price { font-family: var(--mono); font-size: 13.5px; font-weight: 700; }
+  .card-pcts { display: flex; gap: 7px; justify-content: flex-end; margin-top: 3px; font-family: var(--mono); font-size: 11px; }
+
+  /* States */
+  .green-text { color: var(--green); }
+  .red-text { color: var(--red); }
+  .yellow-text { color: var(--yellow); }
+  .muted { color: var(--muted); }
+
+  /* Error / loading */
+  .state-msg { text-align: center; padding: 40px 20px; }
+  .state-msg .icon { font-size: 32px; margin-bottom: 12px; }
+  .state-msg h3 { font-size: 16px; margin-bottom: 8px; }
+  .state-msg p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .retry-btn { background: var(--bg3); border: 1px solid var(--border2); color: var(--text); border-radius: 10px; padding: 12px 24px; font-family: var(--display); font-size: 14px; font-weight: 700; cursor: pointer; }
+
+  /* Footer */
+  .foot { text-align: center; font-size: 11px; color: var(--muted); padding: 10px 16px 20px; line-height: 1.6; }
+
+  /* ── SHEET (bottom drawer) ── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .overlay.open { opacity: 1; pointer-events: all; }
+  .sheet { background: var(--bg2); border: 1px solid var(--border2); border-bottom: none; border-radius: 20px 20px 0 0; width: 100%; max-width: 540px; max-height: 88vh; display: flex; flex-direction: column; transform: translateY(100%); transition: transform .25s cubic-bezier(.32,.72,0,1); padding-bottom: env(safe-area-inset-bottom, 16px); }
+  .overlay.open .sheet { transform: translateY(0); }
+  .grip { width: 38px; height: 4px; background: var(--border2); border-radius: 3px; margin: 10px auto 0; flex-shrink: 0; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 16px 10px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .sheet-sym { font-size: 22px; font-weight: 800; }
+  .sheet-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+  .close-btn { background: transparent; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; line-height: 1; }
+  .sheet-body { overflow-y: auto; flex: 1; padding: 14px 16px; -webkit-overflow-scrolling: touch; }
+  .sheet-foot { padding: 10px 16px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); flex-shrink: 0; line-height: 1.5; }
+
+  /* Blocks inside sheet */
+  .block { border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; margin-bottom: 11px; }
+  .block.green-block { border-color: var(--green); background: rgba(74,222,128,.06); }
+  .block.yellow-block { border-color: var(--yellow); background: rgba(251,191,36,.06); }
+  .block.red-block { border-color: var(--red); background: rgba(248,113,113,.06); }
+  .block-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .kv { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding: 5px 0; border-bottom: 1px solid rgba(31,58,31,.5); }
+  .kv:last-child { border-bottom: none; }
+  .kv-k { color: var(--muted); }
+  .kv-v { font-family: var(--mono); font-size: 12.5px; }
+  .motivos { list-style: none; padding: 0; }
+  .motivos li { font-size: 12.5px; color: #c0d4c0; line-height: 1.5; padding: 3px 0; padding-left: 14px; position: relative; }
+  .motivos li::before { content: '›'; position: absolute; left: 0; color: var(--muted); }
+
+  /* Posición inputs */
+  .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .input-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 11.5px; color: var(--muted); }
+  .input-group input { background: var(--bg); border: 1px solid var(--border2); border-radius: 9px; padding: 10px 11px; color: var(--text); font-family: var(--mono); font-size: 14px; width: 100%; outline: none; }
+  .input-group input:focus { border-color: var(--accent); }
+  .save-btn { width: 100%; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); border-radius: 10px; padding: 12px; font-family: var(--display); font-size: 14px; font-weight: 700; cursor: pointer; transition: background .12s; }
+  .save-btn:active { background: var(--border2); }
+
+  /* Contexto */
+  .ctx-text { font-size: 13.5px; line-height: 1.65; color: #d0e0d0; }
+  .ctx-loading { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+  /* Ajustes panel */
+  .cfg-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .cfg-field label { font-size: 12px; color: var(--muted); }
+  .cfg-field input { background: var(--bg); border: 1px solid var(--border2); border-radius: 9px; padding: 10px 11px; color: var(--text); font-family: var(--mono); font-size: 14px; width: 100%; outline: none; }
+  .cfg-field input:focus { border-color: var(--accent); }
+
+  /* Pulse animation for loading */
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse { animation: pulse 1.4s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <h1>Tablero Cripto</h1>
+    <p>Análisis · Satoshi Tango</p>
+  </div>
+  <div class="header-btns">
+    <button class="icon-btn" id="cfgBtn" title="Ajustes">⚙</button>
+    <button class="icon-btn" id="refreshBtn" title="Actualizar">↻</button>
+  </div>
+</div>
+
+<!-- Disclaimer -->
+<div class="disclaimer">
+  Analiza variables para que <strong>vos decidás</strong>. No predice precios ni dice qué comprar. La decisión y el riesgo son tuyos.
+</div>
+
+<!-- FNG -->
+<div class="fng-wrap" id="fngWrap" style="display:none">
+  <div class="fng-top">
+    <span class="fng-label">Miedo y codicia del mercado</span>
+    <span class="fng-val" id="fngVal">—</span>
+  </div>
+  <div class="fng-track"><div class="fng-fill" id="fngFill" style="width:0%"></div></div>
+  <div class="fng-hint" id="fngHint"></div>
+</div>
+
+<!-- Estado -->
+<div id="stateMsg" class="state-msg pulse">
+  <div class="icon">⏳</div>
+  <h3>Cargando datos…</h3>
+  <p>Conectando con CoinGecko</p>
+</div>
+
+<!-- Lista -->
+<div class="list" id="coinList" style="display:none"></div>
+
+<!-- Pie -->
+<div class="foot" id="foot" style="display:none"></div>
+
+<!-- ── SHEET: Detalle de moneda ── -->
+<div class="overlay" id="detSheet">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-sym" id="dSym">—</div>
+        <div class="sheet-sub" id="dSub">—</div>
+      </div>
+      <button class="close-btn" id="dClose">✕</button>
+    </div>
+    <div class="sheet-body" id="dBody"></div>
+    <div class="sheet-foot">Análisis sobre datos de mercado y noticias. Puede contener errores. No es consejo de inversión.</div>
+  </div>
+</div>
+
+<!-- ── SHEET: Ajustes ── -->
+<div class="overlay" id="cfgSheet">
+  <div class="sheet">
+    <div class="grip"></div>
+    <div class="sheet-head">
+      <div><div class="sheet-sym">Ajustes de salida</div></div>
+      <button class="close-btn" id="cfgClose">✕</button>
+    </div>
+    <div class="sheet-body" id="cfgBody"></div>
+    <div class="sheet-foot">Los cambios se guardan en tu celular.</div>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURACIÓN ──
+const COINS = [
+  { id:"bitcoin",       symbol:"BTC",   name:"Bitcoin"    },
+  { id:"ethereum",      symbol:"ETH",   name:"Ethereum"   },
+  { id:"tether",        symbol:"USDT",  name:"Tether"     },
+  { id:"usd-coin",      symbol:"USDC",  name:"USD Coin"   },
+  { id:"binancecoin",   symbol:"BNB",   name:"BNB"        },
+  { id:"solana",        symbol:"SOL",   name:"Solana"     },
+  { id:"ripple",        symbol:"XRP",   name:"XRP"        },
+  { id:"cardano",       symbol:"ADA",   name:"Cardano"    },
+  { id:"dogecoin",      symbol:"DOGE",  name:"Dogecoin"   },
+  { id:"litecoin",      symbol:"LTC",   name:"Litecoin"   },
+  { id:"polkadot",      symbol:"DOT",   name:"Polkadot"   },
+  { id:"chainlink",     symbol:"LINK",  name:"Chainlink"  },
+  { id:"matic-network", symbol:"MATIC", name:"Polygon"    },
+  { id:"avalanche-2",   symbol:"AVAX",  name:"Avalanche"  },
+];
+const IDS = COINS.map(c=>c.id).join(",");
+
+const DEF_U = { refObjetivo:30, persistDias:5, persistMin:4, persistMag:-10, catastrofe:-20, trailing:-15 };
+
+// ── ESTADO ──
+let rows = [];
+let fngData = null;
+let u = JSON.parse(localStorage.getItem("cripto_u") || "null") || {...DEF_U};
+let pos = JSON.parse(localStorage.getItem("cripto_pos") || "{}");
+let selectedId = null;
+let refreshTimer = null;
+
+// ── HELPERS ──
+const fmtP = n => n==null?"—": n>=1?"$"+n.toLocaleString("en-US",{maximumFractionDigits:2}):"$"+n.toLocaleString("en-US",{maximumFractionDigits:6});
+const fmtPct = n => n==null?"—":(n>=0?"+":"")+n.toFixed(2)+"%";
+const pctCls = n => n==null?"muted": n>=0?"green-text":"red-text";
+
+function volatilidad(spark){
+  if(!spark||spark.length<3)return null;
+  const rets=[];
+  for(let i=1;i<spark.length;i++) rets.push((spark[i]-spark[i-1])/spark[i-1]);
+  const m=rets.reduce((a,b)=>a+b,0)/rets.length;
+  const v=rets.reduce((a,b)=>a+(b-m)**2,0)/rets.length;
+  return Math.sqrt(v)*100;
+}
+
+function cierresDiarios(spark){
+  if(!spark||spark.length<8)return null;
+  const pD=Math.max(1,Math.floor(spark.length/7));
+  const c=[];
+  for(let d=1;d<=7;d++) c.push(spark[Math.min(spark.length-1,d*pD-1)]);
+  return c;
+}
+
+function analizarDeterioro(cierres){
+  if(!cierres||cierres.length<u.persistDias+1)return{dias:0,acum:0,gatilla:false};
+  const v=cierres.slice(-(u.persistDias+1));
+  let dias=0;
+  for(let i=1;i<v.length;i++) if(v[i]<v[i-1]) dias++;
+  const acum=((v[v.length-1]-v[0])/v[0])*100;
+  return{dias,acum,gatilla:dias>=u.persistMin&&acum<=u.persistMag};
+}
+
+function semaforoRiesgo(r,fng){
+  let pts=0;const motivos=[];
+  if(fng!=null&&fng>=75){pts+=2;motivos.push("Mercado en euforia — zona históricamente riesgosa para comprar");}
+  else if(fng!=null&&fng<=25){pts+=1;motivos.push("Mercado en pánico — alta incertidumbre");}
+  if(r.volat!=null&&r.volat>6){pts+=2;motivos.push("Volatilidad muy alta ("+r.volat.toFixed(1)+"%/día)");}
+  else if(r.volat!=null&&r.volat>3.5){pts+=1;motivos.push("Volatilidad elevada ("+r.volat.toFixed(1)+"%/día)");}
+  if(r.athChg!=null&&r.athChg>-8){pts+=1;motivos.push("Muy cerca de máximos históricos");}
+  const t1=r.ch24??0,t7=r.ch7??0,t30=r.ch30??0;
+  if((t1>=0)!==(t7>=0)||(t7>=0)!==(t30>=0)){pts+=1;motivos.push("Tendencias contradictorias entre plazos");}
+  if(r.det&&r.det.dias>=u.persistMin-1&&!r.det.gatilla){pts+=1;motivos.push("Deterioro acumulándose: "+r.det.dias+" días en baja de los últimos "+u.persistDias);}
+  const luz=pts>=3?"rojo":pts>=1?"amarillo":"verde";
+  if(luz==="verde")motivos.push("Sin señales de riesgo elevado de entrada ahora");
+  return{luz,motivos};
+}
+
+function estadoSalida(r,p){
+  if(!p||!p.compra)return null;
+  const det=r.det||{dias:0,acum:0,gatilla:false};
+  const gan=((r.price-p.compra)/p.compra)*100;
+  const pico=Math.max(p.pico||p.compra,r.price||p.compra);
+  const desdePico=((r.price-pico)/pico)*100;
+  const cat=(r.ch24||0)<=u.catastrofe;
+  const trail=desdePico<=u.trailing;
+  let luz="verde",razon="Tendencia sostenida — dejá correr";
+  if(cat){luz="rojo";razon="⚡ Caída brusca hoy ("+fmtPct(r.ch24)+") — salida inmediata";}
+  else if(det.gatilla){luz="rojo";razon="📉 Deterioro sostenido: bajó "+det.dias+" de "+u.persistDias+" días ("+fmtPct(det.acum)+")";}
+  else if(trail){luz="rojo";razon="🔒 Cayó "+fmtPct(desdePico)+" desde el pico — protegé ganancia";}
+  else if(det.dias>=u.persistMin-1){luz="amarillo";razon="⚠ Empezando a flaquear: "+det.dias+" días en baja";}
+  else if(gan>=(u.refObjetivo*0.7)){luz="amarillo";razon="✅ Cerca del objetivo de ganancia (+"+u.refObjetivo+"% ref)";}
+  return{luz,razon,gan,desdePico,det,pico};
+}
+
+// ── CARGA DE DATOS ──
+async function loadData(){
+  const btn=document.getElementById("refreshBtn");
+  btn.classList.add("spin");
+  const cgUrl="https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids="+IDS+
+    "&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d,30d";
+  const proxies=[
+    cgUrl,
+    "https://corsproxy.io/?"+encodeURIComponent(cgUrl),
+    "https://api.allorigins.win/raw?url="+encodeURIComponent(cgUrl),
+  ];
+  let data=null;
+  for(const url of proxies){
+    try{
+      const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+      if(r.ok){data=await r.json();break;}
+    }catch{}
+  }
+  // FNG
+  try{
+    const fr=await fetch("https://api.alternative.me/fng/?limit=1",{signal:AbortSignal.timeout(5000)});
+    if(fr.ok){const fj=await fr.json();fngData=fj?.data?.[0]||null;}
+  }catch{}
+
+  btn.classList.remove("spin");
+
+  if(!data){
+    showError();return;
+  }
+
+  const byId={};
+  data.forEach(d=>byId[d.id]=d);
+  rows=COINS.map(c=>{
+    const d=byId[c.id]||{};
+    const spark=d.sparkline_in_7d?.price||null;
+    const cierres=cierresDiarios(spark);
+    return{...c,
+      price:d.current_price??null,
+      ch24:d.price_change_percentage_24h_in_currency??null,
+      ch7:d.price_change_percentage_7d_in_currency??null,
+      ch30:d.price_change_percentage_30d_in_currency??null,
+      vol:d.total_volume??null,
+      high24:d.high_24h??null,
+      low24:d.low_24h??null,
+      ath:d.ath??null,
+      athChg:d.ath_change_percentage??null,
+      spark,volat:volatilidad(spark),cierres,
+      det:analizarDeterioro(cierres)
+    };
+  });
+  renderAll();
+}
+
+function showError(){
+  document.getElementById("stateMsg").innerHTML=`
+    <div class="icon">⚠️</div>
+    <h3 class="red-text">No se pudieron cargar los datos</h3>
+    <p>CoinGecko está bloqueando la conexión.<br/>Probá en unos segundos.</p>
+    <button class="retry-btn" onclick="loadData()">↻ Reintentar</button>`;
+  document.getElementById("stateMsg").classList.remove("pulse");
+  document.getElementById("stateMsg").style.display="block";
+  document.getElementById("coinList").style.display="none";
+  document.getElementById("foot").style.display="none";
+}
+
+// ── RENDER ──
+function renderAll(){
+  // FNG
+  if(fngData){
+    const v=Number(fngData.value);
+    const map={"Extreme Fear":"Miedo extremo","Fear":"Miedo","Neutral":"Neutral","Greed":"Codicia","Extreme Greed":"Codicia extrema"};
+    const c=v<25?"#f87171":v<45?"#fbbf24":v<55?"#7a8f7a":v<75?"#4ade80":"#fbbf24";
+    document.getElementById("fngVal").textContent=v+" · "+(map[fngData.value_classification]||fngData.value_classification);
+    document.getElementById("fngVal").style.color=c;
+    document.getElementById("fngFill").style.width=v+"%";
+    document.getElementById("fngFill").style.background=c;
+    document.getElementById("fngHint").textContent=v>=75?"Euforia: zona históricamente riesgosa para comprar caro.":v<=25?"Pánico: el mercado teme. Históricamente cerca de pisos, pero puede seguir cayendo.":"Sin extremos marcados de miedo ni codicia.";
+    document.getElementById("fngWrap").style.display="block";
+  }
+
+  const fng=fngData?Number(fngData.value):null;
+  const list=document.getElementById("coinList");
+  list.innerHTML="";
+  rows.forEach(r=>{
+    const p=pos[r.id];
+    const sal=estadoSalida(r,p);
+    const riesgo=semaforoRiesgo(r,fng);
+    const luzActiva=sal?sal.luz:riesgo.luz;
+    const statusText=sal?`<span class="${luzActiva==='verde'?'green-text':luzActiva==='amarillo'?'yellow-text':'red-text'}">${sal.luz==='rojo'?'SALIR':sal.luz==='amarillo'?'ATENCIÓN':'Dejá correr'}</span>`:
+      `<span class="${luzActiva==='verde'?'green-text':luzActiva==='amarillo'?'yellow-text':'red-text'}">${luzActiva==='verde'?'Entrada calma':luzActiva==='amarillo'?'Entrada: atención':'Entrada: peligro'}</span>`;
+    const subText=sal?`<span class="${pctCls(sal.gan)}">${fmtPct(sal.gan)} tu posición</span>`:`<span class="muted">Tocá para analizar</span>`;
+
+    const card=document.createElement("button");
+    card.className="card "+luzActiva;
+    card.innerHTML=`
+      <div class="card-left">
+        <div class="card-sym">${r.symbol}</div>
+        <div class="card-name">${r.name}</div>
+      </div>
+      <div class="card-mid">
+        <div class="card-status">${statusText}</div>
+        <div class="card-sub">${subText}</div>
+      </div>
+      <div class="card-right">
+        <div class="card-price">${fmtP(r.price)}</div>
+        <div class="card-pcts">
+          <span class="${pctCls(r.ch24)}">24h ${fmtPct(r.ch24)}</span>
+          <span class="${pctCls(r.ch7)}">7d ${fmtPct(r.ch7)}</span>
+        </div>
+      </div>`;
+    card.addEventListener("click",()=>openDetail(r.id));
+    list.appendChild(card);
+  });
+
+  document.getElementById("stateMsg").style.display="none";
+  list.style.display="flex";
+  const foot=document.getElementById("foot");
+  foot.textContent="Actualizado "+new Date().toLocaleTimeString("es-AR")+" · CoinGecko + Alternative.me · señales sobre cierres diarios · refresca cada 60s";
+  foot.style.display="block";
+}
+
+// ── DETALLE ──
+function openDetail(id){
+  selectedId=id;
+  const r=rows.find(x=>x.id===id);
+  const p=pos[id];
+  const fng=fngData?Number(fngData.value):null;
+  const riesgo=semaforoRiesgo(r,fng);
+  const sal=estadoSalida(r,p);
+
+  document.getElementById("dSym").textContent=r.symbol+" · "+r.name;
+  document.getElementById("dSub").textContent=fmtP(r.price)+" USD";
+
+  const body=document.getElementById("dBody");
+
+  // Semáforo de entrada
+  const semCls=riesgo.luz==="verde"?"green-block":riesgo.luz==="amarillo"?"yellow-block":"red-block";
+  const semTxt=riesgo.luz==="verde"?"Calmo":riesgo.luz==="amarillo"?"Atención":"Peligro";
+  const semColor=riesgo.luz==="verde"?"var(--green)":riesgo.luz==="amarillo"?"var(--yellow)":"var(--red)";
+
+  // Estado de salida HTML
+  let salHTML="";
+  if(sal){
+    const sCls=sal.luz==="verde"?"green-block":sal.luz==="amarillo"?"yellow-block":"red-block";
+    const sCol=sal.luz==="verde"?"var(--green)":sal.luz==="amarillo"?"var(--yellow)":"var(--red)";
+    const enPlata=p&&p.monto>0?`<div class="kv"><span class="kv-k">En plata</span><span class="kv-v ${pctCls(sal.gan)}">${fmtP(p.monto*(1+sal.gan/100)-p.monto)}</span></div>`:"";
+    salHTML=`<div class="block ${sCls}" style="margin-top:11px">
+      <div class="block-title"><span class="dot" style="background:${sCol}"></span>Estado de salida: ${sal.luz==="rojo"?"SALIR":sal.luz==="amarillo"?"Atención":"Dejá correr"}</div>
+      <p style="font-size:12.5px;color:#c0d4c0;margin-bottom:10px;line-height:1.5">${sal.razon}</p>
+      <div class="kv"><span class="kv-k">Ganancia/pérdida</span><span class="kv-v ${pctCls(sal.gan)}">${fmtPct(sal.gan)}</span></div>
+      ${enPlata}
+      <div class="kv"><span class="kv-k">Desde el pico</span><span class="kv-v ${pctCls(sal.desdePico)}">${fmtPct(sal.desdePico)}</span></div>
+      <div class="kv"><span class="kv-k">Días en baja (de ${u.persistDias})</span><span class="kv-v">${sal.det.dias}</span></div>
+    </div>`;
+  }
+
+  body.innerHTML=`
+    <!-- Riesgo entrada -->
+    <div class="block ${semCls}">
+      <div class="block-title"><span class="dot" style="background:${semColor}"></span>Riesgo de entrada: ${semTxt}</div>
+      <ul class="motivos">${riesgo.motivos.map(m=>`<li>${m}</li>`).join("")}</ul>
+    </div>
+
+    <!-- Variables -->
+    <div class="block">
+      <div class="block-title">Variables analizadas</div>
+      <div class="kv"><span class="kv-k">Tendencia 24h / 7d / 30d</span><span class="kv-v"><span class="${pctCls(r.ch24)}">${fmtPct(r.ch24)}</span> / <span class="${pctCls(r.ch7)}">${fmtPct(r.ch7)}</span> / <span class="${pctCls(r.ch30)}">${fmtPct(r.ch30)}</span></span></div>
+      <div class="kv"><span class="kv-k">Volatilidad diaria</span><span class="kv-v">${r.volat!=null?r.volat.toFixed(1)+"% "+(r.volat>6?"(muy alta)":r.volat>3.5?"(elevada)":"(normal)"):"—"}</span></div>
+      <div class="kv"><span class="kv-k">Distancia al máximo histórico</span><span class="kv-v ${pctCls(r.athChg)}">${r.athChg!=null?fmtPct(r.athChg):"—"}</span></div>
+      <div class="kv"><span class="kv-k">Rango 24h</span><span class="kv-v">${fmtP(r.low24)} – ${fmtP(r.high24)}</span></div>
+      <div class="kv"><span class="kv-k">Volumen 24h</span><span class="kv-v">${r.vol!=null?"$"+(r.vol/1e6).toFixed(0)+"M":"—"}</span></div>
+      <div class="kv"><span class="kv-k">Deterioro 5d</span><span class="kv-v">${r.det?r.det.dias+" días en baja · "+fmtPct(r.det.acum):"—"}</span></div>
+    </div>
+
+    <!-- Tu posición -->
+    <div class="block">
+      <div class="block-title">Tu posición</div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>Precio de compra (USD)</label>
+          <input id="inCompra" type="number" inputmode="decimal" placeholder="ej: 65000" value="${p?.compra||""}"/>
+        </div>
+        <div class="input-group">
+          <label>Monto invertido (USD)</label>
+          <input id="inMonto" type="number" inputmode="decimal" placeholder="ej: 100" value="${p?.monto||""}"/>
+        </div>
+      </div>
+      <button class="save-btn" id="savePos">Guardar posición</button>
+      ${salHTML}
+    </div>
+
+    <!-- Contexto -->
+    <div class="block">
+      <div class="block-title">Contexto reciente</div>
+      <div id="ctxArea" class="ctx-loading pulse">Buscando noticias…</div>
+    </div>
+  `;
+
+  document.getElementById("savePos").addEventListener("click",()=>{
+    const c=parseFloat(document.getElementById("inCompra").value);
+    const m=parseFloat(document.getElementById("inMonto").value)||0;
+    if(!c){delete pos[id];}
+    else{ pos[id]={compra:c,monto:m,pico:Math.max(pos[id]?.pico||c,r.price||c)}; }
+    localStorage.setItem("cripto_pos",JSON.stringify(pos));
+    openDetail(id); // re-render
+  });
+
+  openSheet("detSheet");
+  loadContext(r);
+}
+
+async function loadContext(r){
+  const area=document.getElementById("ctxArea");
+  if(!area)return;
+  try{
+    // CryptoPanic API pública — noticias reales sin restricciones
+    const sym=r.symbol.toLowerCase();
+    const url="https://cryptopanic.com/api/free/v1/posts/?auth_token=free&currencies="+r.symbol+"&kind=news&public=true";
+    const proxies=[
+      "https://corsproxy.io/?"+encodeURIComponent(url),
+      "https://api.allorigins.win/raw?url="+encodeURIComponent(url),
+    ];
+    let news=null;
+    for(const pu of proxies){
+      try{
+        const res=await fetch(pu,{signal:AbortSignal.timeout(7000)});
+        if(res.ok){const j=await res.json();if(j.results&&j.results.length){news=j.results;break;}}
+      }catch{}
+    }
+    const el=document.getElementById("ctxArea");
+    if(!el)return;
+    el.classList.remove("pulse");
+    if(!news||!news.length){
+      el.innerHTML=`<p style="color:var(--muted);font-size:13px">No se encontraron noticias recientes para ${r.symbol}.</p>`;
+      return;
+    }
+    // Mostrar las últimas 5 noticias con título, fuente y fecha
+    const items=news.slice(0,5).map(n=>{
+      const d=new Date(n.published_at);
+      const hace=timeSince(d);
+      const votes=n.votes?(n.votes.positive>0?`<span style="color:var(--green)">▲${n.votes.positive}</span>`:""):"";
+      return `<div style="border-bottom:1px solid var(--border);padding:9px 0;last-child{border:none}">
+        <div style="font-size:13px;color:var(--text);line-height:1.4;margin-bottom:4px">${n.title}</div>
+        <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;align-items:center">
+          <span>${n.source?.title||"Fuente"}</span>
+          <span>${hace}</span>
+          ${votes}
+        </div>
+      </div>`;
+    }).join("");
+    el.innerHTML=`
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Últimas noticias · CryptoPanic</div>
+      ${items}
+      <div style="margin-top:10px;font-size:11px;color:var(--muted)">Noticias en inglés de fuentes internacionales. No son consejo de inversión.</div>`;
+  }catch(e){
+    const el=document.getElementById("ctxArea");
+    if(el){el.classList.remove("pulse");el.innerHTML=`<p style="color:var(--red);font-size:13px">No se pudieron cargar las noticias. Reintentá en un momento.</p>`;}
+  }
+}
+
+function timeSince(date){
+  const s=Math.floor((new Date()-date)/1000);
+  if(s<60)return"hace "+s+"s";
+  if(s<3600)return"hace "+Math.floor(s/60)+"m";
+  if(s<86400)return"hace "+Math.floor(s/3600)+"h";
+  return"hace "+Math.floor(s/86400)+"d";
+}
+
+// ── CONFIG PANEL ──
+function openConfig(){
+  const body=document.getElementById("cfgBody");
+  const campos=[
+    ["refObjetivo","Referencia de ganancia (+%)","Punto donde el tablero te avisa que estás cerca del objetivo"],
+    ["persistDias","Ventana de días para deterioro","Cuántos días miramos hacia atrás"],
+    ["persistMin","Días en baja para gatillar salida","De los días de la ventana, cuántos deben estar en baja"],
+    ["persistMag","Caída acumulada mínima (%)","El acumulado de esa ventana tiene que ser peor que este número"],
+    ["catastrofe","Caída de 1 día = salida inmediata (%)","Si cae más que esto en un solo día, salida sin esperar"],
+    ["trailing","Caída desde el pico = salida (%)","Si cae más que esto desde el máximo alcanzado, protegé ganancia"],
+  ];
+  body.innerHTML=campos.map(([k,label,desc])=>`
+    <div class="cfg-field">
+      <label>${label}</label>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${desc}</div>
+      <input type="number" data-key="${k}" value="${u[k]}"/>
+    </div>`).join("")+
+    `<button class="save-btn" id="saveCfg">Aplicar cambios</button>`;
+  document.getElementById("saveCfg").addEventListener("click",()=>{
+    campos.forEach(([k])=>{
+      const v=parseFloat(body.querySelector('[data-key="'+k+'"]').value);
+      if(!isNaN(v))u[k]=v;
+    });
+    localStorage.setItem("cripto_u",JSON.stringify(u));
+    closeSheet("cfgSheet");
+    renderAll();
+  });
+  openSheet("cfgSheet");
+}
+
+// ── SHEETS ──
+function openSheet(id){document.getElementById(id).classList.add("open");}
+function closeSheet(id){document.getElementById(id).classList.remove("open");}
+
+document.getElementById("dClose").addEventListener("click",()=>closeSheet("detSheet"));
+document.getElementById("cfgClose").addEventListener("click",()=>closeSheet("cfgSheet"));
+document.getElementById("detSheet").addEventListener("click",function(e){if(e.target===this)closeSheet("detSheet");});
+document.getElementById("cfgSheet").addEventListener("click",function(e){if(e.target===this)closeSheet("cfgSheet");});
+document.getElementById("cfgBtn").addEventListener("click",openConfig);
+document.getElementById("refreshBtn").addEventListener("click",()=>{
+  clearInterval(refreshTimer);
+  loadData();
+  refreshTimer=setInterval(loadData,60000);
+});
+
+// ── ARRANCAR ──
+loadData();
+refreshTimer=setInterval(loadData,60000);
+</script>
+</body>
+</html>
